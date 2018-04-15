@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style> body {padding: 0; margin: 0;} </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/addons/p5.dom.min.js"></script>
+    <script src="sketch.js"></script>
+  </head>
+  <body>
+    <div id="parameters" style="width:100%; height:70px;">
+      <form action="javascript:plotLimitSet();">
+        ta: <input type="text" id="taRe" placeholder="real part of ta">
+        + i <input type="text" id="taIm" placeholder="imaginary part of ta">
+        tb: <input type="text" id="tbRe" placeholder="real part of tb">
+        + i <input type="text" id="tbIm" placeholder="imaginary part of tb">
+        sign: <input type="radio" name="sign" id="plusSign" checked><label for="plusSign">+</label>
+              <input type="radio" name="sign" id="minusSign"><label for="minusSign">-</label>
+        special words: <input type="text" id="specialWords" pattern=" *([abAB]+[, ]*)*" placeholder="special parabolic words" title="Enter a comma separated list of words in a,b,A,B">
+        <br>
+        <label for="xMin">x range:</label>
+        <input type="text" id="xMin">
+        <label for="xMax">to</label>
+        <input type="text" id="xMax">
+
+        <label for="yMin">y range:</label>
+        <input type="text" id="yMin">
+        <label for="yMax">to</label>
+        <input type="text" id="yMax">
+        <br>
+        <label for="terminationThreshold">Termination threshold:</label><input type="text" id="terminationThreshold">
+        <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth" min="1">
+        <input type="submit" id="submit" value="Plot!">
+      </form>
+    </div>
+  </body>
+</html>
