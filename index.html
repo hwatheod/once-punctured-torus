@@ -2,7 +2,21 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <style> body {padding: 0; margin: 0;} </style>
+    <style>
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: grey;
+        color: white;
+        text-align: center;
+     }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/addons/p5.dom.min.js"></script>
     <script src="sketch.js"></script>
@@ -32,6 +46,10 @@
         <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth" min="1">
         <input type="submit" id="submit" value="Plot!">
       </form>
+    </div>
+    <div class="footer">
+      Questions or comments?  Email Ted Hwa at <a href="mailto:hwatheod@cs.stanford.edu">hwatheod@cs.stanford.edu</a>.
+            <A HREF="https://github.com/hwatheod/once-punctured-torus">Github repository</A> for this page.
     </div>
   </body>
 </html>
