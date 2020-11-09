@@ -479,7 +479,7 @@ function draw() {
 }
 
 function validateNumeric(elementId, defaultValue = NaN) {
-  const elt = select('#' + elementId).elt;
+  const elt = document.getElementById(elementId);
   let result;
   if (elt.value.trim().length == 0) {
     result = defaultValue;
@@ -563,7 +563,7 @@ function setPredefinedDrawing() {
     }
   }
 
-  const selection = select('#drawing').value();
+  const selection = document.getElementById('drawing').value;
   const drawing = predefinedDrawings[selection];
   for (key in drawing) {
     if (drawing.hasOwnProperty(key) && key != "sign") {
@@ -588,12 +588,12 @@ function plotLimitSet() {
   const yMax = validateNumeric("yMax");
 
   let sign = 1;
-  if (select('#minusSign').elt.checked) {
+  if (document.getElementById('minusSign').checked) {
     sign = -1;
   }
   const terminationThreshold = validateNumeric("terminationThreshold");
   const maxDepth = validateNumeric("maxDepth");
-  const specialWords = select('#specialWords').value().split(",").map(trim);
+  const specialWords = document.getElementById('specialWords').value.split(",").map(x => x.trim());
     
   if (isNaN(taRe) ||
   isNaN(taIm) ||
