@@ -458,21 +458,20 @@ TODO
 
 check special words to make sure they're really parabolic
 allow saving parameter sets and naming them
-create default list of "cool" plots
 
  */
 function setup() {
   createCanvas(800, 800);
-  background(128);
+  background(255);
   noLoop();
 }
 
 function draw() {
   if (plane != null && plotter != null) {
     clear();
-    background(128);
+    background(255);
     const t0 = performance.now();
-    dfsPlot(plane, plotter, ['#0000ff', '#ffff00', '#ff0000', '#00c000']);
+    dfsPlot(plane, plotter, ['#0000ff', '#c000c0', '#ff0000', '#00c000']);
     const t1 = performance.now();
     console.log("Time used: " + (t1 - t0)/1000 + " seconds");
     console.log("======");
@@ -498,6 +497,84 @@ function validateNumeric(elementId, defaultValue = NaN) {
     elt.style.color = "black";
   }
   return result;
+}
+
+function setPredefinedDrawing() {
+  const predefinedDrawings = {
+    "fig_7_1": {
+      "taRe": 2, "taIm": 0, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "a,b",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_8_1": {
+      "taRe": 1.87, "taIm": 0.1, "tbRe": 1.87, "tbIm": -0.1, "sign": "-", "specialWords": "",
+      "xMin": -2.5, "xMax": 2.5, "yMin": -2.5, "yMax": 2.5,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_8_2_5": {
+      "taRe": 2.2, "taIm": 0, "tbRe": 2.2, "tbIm": 0, "sign": "-", "specialWords": "",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_8_5_3": {
+      "taRe": 2, "taIm": 0.5, "tbRe": 2, "tbIm": 0.5, "sign": "+", "specialWords": "",
+      "xMin": -1.6, "xMax": 1.6, "yMin": -1.6, "yMax": 1.6,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_8_11": {
+      "taRe": 1.91, "taIm": 0.05, "tbRe": 3, "tbIm": 0, "sign": "-", "specialWords": "",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_8_14": {
+      "taRe": 3, "taIm": 0, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "b",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_8_15_1": {
+      "taRe": 2.0, "taIm": 0.05, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "b",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_8_15_4": {
+      "taRe": 1.887, "taIm": 0.05, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "b",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.0005, "maxDepth": 5000
+    },
+    "fig_8_23": {
+      "taRe": 1.96556, "taIm": -0.99536, "tbRe": 3, "tbIm": 0, "sign": "+", "specialWords": "aaB",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.001, "maxDepth": 2500
+    },
+    "fig_9_1": {
+      "taRe": 1.95859, "taIm": -0.01128, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": `b,${"a".repeat(15)}B`,
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.005, "maxDepth": 2500
+    },
+    "fig_9_3": {
+      "taRe": 1.64214, "taIm": -0.76659, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "b,aaaBaaB",
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.005, "maxDepth": 2500
+    },
+    "fig_9_15_4": {
+      "taRe": 1.90378, "taIm": -0.03958, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": `b,${"a".repeat(10)}B${"a".repeat(9)}B`,
+      "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
+      "terminationThreshold": 0.005, "maxDepth": 2500
+    }
+  }
+
+  const selection = select('#drawing').value();
+  const drawing = predefinedDrawings[selection];
+  for (key in drawing) {
+    if (drawing.hasOwnProperty(key) && key != "sign") {
+      document.getElementById(key).value = drawing[key];
+    }
+  }
+  if (drawing["sign"] == "-") {
+    document.getElementById("minusSign").checked = true;
+  } else if (drawing["sign"] == "+") {
+    document.getElementById("plusSign").checked = true;
+  }
 }
 
 function plotLimitSet() {
