@@ -516,6 +516,11 @@ function validateNumeric(elementId, defaultValue = NaN) {
 
 function setPredefinedDrawing() {
   const predefinedDrawings = {
+    "None": {
+      "taRe": "", "taIm": "", "tbRe": "", "tbIm": "", "sign": "-", "specialWords": "",
+      "xMin": "", "xMax": "", "yMin": "", "yMax": "",
+      "terminationThreshold": "", "maxDepth": ""
+    },
     "fig_7_1": {
       "taRe": 2, "taIm": 0, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "a,b",
       "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
@@ -582,7 +587,9 @@ function setPredefinedDrawing() {
   const drawing = predefinedDrawings[selection];
   for (key in drawing) {
     if (drawing.hasOwnProperty(key) && key != "sign") {
-      document.getElementById(key).value = drawing[key];
+      const elt = document.getElementById(key);
+      elt.value = drawing[key];
+      elt.style.color = "black"; // in case it was previously red due to invalid input
     }
   }
   if (drawing["sign"] == "-") {
