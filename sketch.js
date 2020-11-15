@@ -186,10 +186,14 @@ class QuasiFuchsianPlotRoutine {
     this.terminationThreshold = terminationThreshold;
     this.maxDepth = maxDepth;
     this.specialFixedPointList = new Array(4);
-    this.setSpecialWords(specialWords); // also sets this.oldPoint to the beginning value
-    this.count = 0;
-    this.wordLengthReached = 0;
-    this.terminateRun = false;
+    const ok = this.setSpecialWords(specialWords); // also sets this.oldPoint to the beginning value
+    if (!ok) { // parabolic fixed point at infinity
+      this.terminateRun = true;
+    } else {
+      this.count = 0;
+      this.wordLengthReached = 0;
+      this.terminateRun = false;
+    }
   }
 
   isRunTerminated() {
@@ -312,17 +316,24 @@ class QuasiFuchsianPlotRoutine {
             const index = letterList.indexOf(c);
             transformationForWord = transformationForWord.rightMultiply(this.transformList[index]);
          }
+         const fixedPoint = transformationForWord.parabolicFixpoint();
+         if (isNaN(fixedPoint.re)) {
+           alert("Fixed point infinity for word: " + word + ". Changing the sign may help.");
+           return false;
+         }
          this.specialFixedPointList[i].push(transformationForWord.parabolicFixpoint());
        }
     }
 
     this.oldPoint = this.specialFixedPointList[0][0]; // This is the starting point.
     console.log(this.oldPoint);
+    return true;
   }
 
   postPlotFunction() {
-    if (this.terminateRun)
+    if (this.terminateRun) {
       console.log("Run terminated early because maximum depth " + this.maxDepth + " was reached at oldPoint = " + this.oldPoint);
+    }
     console.log("Points plotted:" + this.count);
     console.log("Maximum word length: " + this.wordLengthReached);
   }
@@ -448,7 +459,11 @@ oncePuncturedTorusLimitSetPlotter = function (ta, tb, sign, terminationThreshold
   console.log("m: " + m);
   console.log("m2: " + m2);
 
-  return new QuasiFuchsianPlotRoutine(m, m2, terminationThreshold, maxDepth, specialWords);
+  const qfpr = new QuasiFuchsianPlotRoutine(m, m2, terminationThreshold, maxDepth, specialWords);
+  if (!qfpr.terminateRun) { // parabolic fixed point at infinity
+    return qfpr;
+  }
+  return null;
 };
 
 let plane = null;
