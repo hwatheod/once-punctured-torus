@@ -123,11 +123,10 @@ class MobiusTransformation {
   }
 
   parabolicFixpoint() {
-    // Check that transformation is parabolic (trace = 2 or -2)
-   // if (this.a.cadd(this.d).csubt(new Complex(2)).cnorm() > tolerance && this.a.cadd(this.d).csubt(new Complex(-2)).cnorm() > tolerance)
-   //   throw ("parabolicFixpoint() called on non-parabolic transformation " + this.toString());
+    // we don't verify parabolicity here because in some cases, we need to specify nearly parabolic words as special words.
+    // See Indra's Pearls, p. 265.
 
-    return this.a.csubt(this.d).cdiv(this.c.cmult_scalar(2));  /* (a-d)/(2c) */
+    return this.a.csubt(this.d).cdiv(this.c.cmult_scalar(2));  /* (a-d)/(2c), returns NaN for point at infinity */
   }
 
   toString() {
@@ -321,7 +320,7 @@ class QuasiFuchsianPlotRoutine {
            alert("Fixed point infinity for word: " + word + ". Changing the sign may help.");
            return false;
          }
-         this.specialFixedPointList[i].push(transformationForWord.parabolicFixpoint());
+         this.specialFixedPointList[i].push(fixedPoint);
        }
     }
 
@@ -471,7 +470,6 @@ let plotter = null;
 /*
 TODO
 
-check special words to make sure they're really parabolic
 allow saving parameter sets and naming them
 
  */
