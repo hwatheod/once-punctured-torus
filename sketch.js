@@ -257,6 +257,7 @@ class QuasiFuchsianPlotRoutine {
 
     if (depth == this.maxDepth - 1) {
       if (!terminateBranch) { /* depth too long, we are in a non-discrete group or stuck at a parabolic fixed point */
+        console.log("Terminating at matrix: " + curTransform);
         this.terminateRun = true;
       }
     }
@@ -455,8 +456,14 @@ oncePuncturedTorusLimitSetPlotter = function (ta, tb, sign, terminationThreshold
   m.normalize();
   m2.normalize();
 
-  console.log("m: " + m);
-  console.log("m2: " + m2);
+  console.log("a = " + m);
+  console.log("b = " + m2);
+  const a0 = ta.cdiv(tab.cmult(tb));
+  const a1 = tab.cdiv(tb.cmult(ta));
+  const a2 = tb.cdiv(ta.cmult(tab));
+  console.log("Complex probabilities = " + a0 + ", " + a1 + ", " + a2);
+  console.log("z1, z2 = " + a0 + ", " + (a0.cadd(a1)));
+  console.log("abAB = " + m.rightMultiply(m2).rightMultiply(m.invert_normalized()).rightMultiply(m2.invert_normalized()));
 
   const qfpr = new QuasiFuchsianPlotRoutine(m, m2, terminationThreshold, maxDepth, specialWords);
   if (!qfpr.terminateRun) { // parabolic fixed point at infinity
