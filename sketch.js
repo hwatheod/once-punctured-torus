@@ -557,7 +557,7 @@ function setPredefinedDrawing() {
       "terminationThreshold": 0.001, "maxDepth": 2500
     },
     "fig_8_15_1": {
-      "taRe": 2.0, "taIm": 0.05, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "b",
+      "taRe": 2.0, "taIm": 0.05, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "a,b",
       "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
       "terminationThreshold": 0.001, "maxDepth": 2500
     },
