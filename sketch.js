@@ -1,4 +1,5 @@
 const tolerance = 0.0001;
+let fsa = null;
 
 class Complex {
   constructor(re1, im1=0) {
@@ -180,7 +181,7 @@ class Plane {
 }
 
 class QuasiFuchsianPlotRoutine {
-  constructor (a, b, terminationThreshold, maxDepth, specialWords) {
+  constructor (a, b, terminationThreshold, maxDepth, specialWords, fsa) {
     this.transformList = [a, b, a.invert_normalized(), b.invert_normalized()];
     this.terminationThreshold = terminationThreshold;
     this.maxDepth = maxDepth;
@@ -193,6 +194,7 @@ class QuasiFuchsianPlotRoutine {
       this.wordLengthReached = 0;
       this.terminateRun = false;
     }
+    this.fsa = fsa;
   }
 
   isRunTerminated() {
@@ -226,11 +228,12 @@ class QuasiFuchsianPlotRoutine {
     let prevPoint = this.oldPoint;
     const pointList = [];
     for (const fixedPoint of this.specialFixedPointList[i]) {
+      const newPoint = curTransform.apply(fixedPoint);
       if (first) {
-        first = false; // skip first element since it should be the same as the last point plotted (Indra's Pearls, p. 185)
+        prevPoint = newPoint;
+        first = false;
         continue;
       }
-      const newPoint = curTransform.apply(fixedPoint);
 
       if (newPoint.csubt(prevPoint).cnorm() > this.terminationThreshold) {
         terminateBranch = false;
@@ -277,9 +280,6 @@ class QuasiFuchsianPlotRoutine {
       QuasiFuchsianPlotRoutine.addAllCyclicShifts(this.specialWordsSplit, QuasiFuchsianPlotRoutine.inverse(word));
     }
 
-    QuasiFuchsianPlotRoutine.addAllCyclicShifts(this.specialWordsSplit, "abAB");
-    QuasiFuchsianPlotRoutine.addAllCyclicShifts(this.specialWordsSplit, "BAba");
-       
     const letterList = "abAB";
     for (let i=0; i<4; i++) {
        let lastIndex = i;
@@ -326,7 +326,7 @@ class QuasiFuchsianPlotRoutine {
     }
 
     this.oldPoint = this.specialFixedPointList[0][0]; // This is the starting point.
-    console.log(this.oldPoint);
+    console.log("Initial point: " + this.oldPoint);
     return true;
   }
 
@@ -344,6 +344,7 @@ dfsPlot = function(plane, plotRoutine, colorList) {
   let word = new Array(plotRoutine.maxDepth);
   let i = -1;
   const curTransformList = new Array(plotRoutine.maxDepth);
+  const stateList = plotRoutine.fsa == null ? null : new Array(plotRoutine.maxDepth);
   const id = new MobiusTransformation();
   let curTransform = id;
   let terminateBranch;
@@ -356,6 +357,7 @@ dfsPlot = function(plane, plotRoutine, colorList) {
       curTransformationList[j] for 0 <= j < depth: product (in order) from word[0] through word[j], inclusive.
       curTransform = product (in order) from word[0] to word[depth - 1] (identity if depth == 0).
       i = last transformation (0,1,2,3) tried at current depth, -1 if none.
+      stateList[j] is the state of the FSA corresponding to curTransform at depth j
 
       We need the curTransformationList[] array instead of multiplying by the inverse to undo the previous transform, because
       the latter process introduces numerical errors that eventually accumulate and cause problems with the drawing.
@@ -382,6 +384,14 @@ dfsPlot = function(plane, plotRoutine, colorList) {
           else curTransform = id;
         }
         depth--;
+        continue;
+      }
+    }
+
+    if (plotRoutine.fsa != null) {
+      const prevState = depth == 0 ? 0 : stateList[depth - 1];
+      stateList[depth] = plotRoutine.fsa[prevState][i];
+      if (stateList[depth] == -1) {
         continue;
       }
     }
@@ -421,37 +431,61 @@ dfsPlot = function(plane, plotRoutine, colorList) {
   plotRoutine.postPlotFunction();
 };
 
-oncePuncturedTorusLimitSetPlotter = function (ta, tb, sign, terminationThreshold, maxDepth, specialWords) {
-  /* Reference, Indra's Pearls, p. 229 (Box 21, "Grandma's special parabolic commutator groups") */
+oncePuncturedTorusLimitSetPlotter = function (ta, tb, tabAB, sign, terminationThreshold, maxDepth, specialWords, fsa) {
+  /* Reference, Indra's Pearls
+    p. 261 (Box 23, "Grandma's special four-alarm two-generator groups")
 
+    We have corrected some typos in the formula (6) in Box 23, for the matrix b.
+    The upper right corner should have -i Q t_{ab} instead of +i Q t_{ab}
+    The lower left corner should have +i Q t_{ab} instead of -i Q t_{ab}
+
+    In the special case where t_{abAB} = -2, the formulas reduce to:
+    p. 229 (Box 21, "Grandma's special parabolic commutator groups")
+  */
+
+  const two = new Complex(2);
+  const Q = two.csubt(tabAB).csqrt();
+  const disc = tabAB.cadd((new Complex(0, 1)).cmult(Q).cmult(tabAB.cadd(two).csqrt()));
+  const R = tabAB.cadd(two).csqrt().cmult(new Complex(disc.cnorm() >= 2 ? 1 : -1));
+
+  /*
+    Solve a quadratic to get tab.
+    Need the right choice of sign in the quadratic formula in order to get the same pictures as in Indra's Pearls
+   */
   const ta2 = ta.cmult(ta);
   const tb2 = tb.cmult(tb);
-  const disc = ta2.cmult(tb2).csubt(ta2.cadd(tb2).cmult_scalar(4));
-  const tab = ta.cmult(tb).cadd(disc.csqrt().cmult_scalar(sign)).cmult_scalar(0.5); // need the right choice of sign in the quadratic formula in order to get the same pictures as in Indra's Pearls
+  const B = ta.cmult(tb).cmult_scalar(-1);
+  const C = ta2.cadd(tb2).cadd(tabAB.cmult_scalar(-1).csubt(two));
+  const tab = B.cmult_scalar(-1).cadd(B.cmult(B).csubt(C.cmult_scalar(4)).csqrt().cmult_scalar(sign)).cmult_scalar(0.5);
   console.log("t_a = " + ta + ", t_b = " + tb + ", t_ab = " + tab);
-  if (tab.csubt(new Complex(2)).cnorm() < tolerance) {
+  if (tab.csubt(two).cnorm() < tolerance) {
     throw ("t_ab is very close to 2, algorithm fails. Try the opposite sign, or replace one of the traces with 2.");
   }
 
-  const z0_num = (tab.csubt(new Complex(2))).cmult(tb);
-  const z0_den = (tb.cmult(tab)).csubt(ta.cmult_scalar(2)).cadd(tab.cmult(new Complex(0,2)));
+  const z0_num = tab.csubt(two).cmult(tb.cadd(R));
+  const z0_den = tb.cmult(tab).csubt(ta.cmult_scalar(2)).cadd(tab.cmult(new Complex(0, 1)).cmult(Q));
   const z0 = z0_num.cdiv(z0_den);
 
   const ma = ta.cmult_scalar(0.5);
-  const mb_num = ta.cmult(tab).csubt(tb.cmult_scalar(2)).cadd(new Complex(0,4));
+  const mb_num = ta.cmult(tab).csubt(tb.cmult_scalar(2)).cadd(Q.cmult(new Complex(0,2)));
   const mb_den = tab.cmult_scalar(2).cadd(new Complex(4)).cmult(z0);
   const mb = mb_num.cdiv(mb_den);
-  const mc_num = ta.cmult(tab).csubt(tb.cmult_scalar(2)).csubt(new Complex(0,4)).cmult(z0);
+  const mc_num = ta.cmult(tab).csubt(tb.cmult_scalar(2)).csubt(Q.cmult(new Complex(0,2))).cmult(z0);
   const mc_den = tab.cmult_scalar(2).csubt(new Complex(4));
   const mc = mc_num.cdiv(mc_den);
 
   const m = new MobiusTransformation(ma, mb, mc, ma);
 
-  const m2a = tb.csubt(new Complex(0,2)).cmult_scalar(0.5);
-  const m2b = tb.cmult_scalar(0.5);
-  const m2d = tb.cadd(new Complex(0,2)).cmult_scalar(0.5);
+  const m2a = tb.csubt(Q.cmult(new Complex(0,1))).cmult_scalar(0.5);
+  const m2b_num = tb.cmult(tab).csubt(ta.cmult_scalar(2)).csubt(tab.cmult(Q).cmult(new Complex(0,1)));
+  const m2b_den = tab.cmult_scalar(2).cadd(new Complex(4)).cmult(z0);
+  const m2b = m2b_num.cdiv(m2b_den);
+  const m2c_num = tb.cmult(tab).csubt(ta.cmult_scalar(2)).cadd(tab.cmult(Q).cmult(new Complex(0,1))).cmult(z0);
+  const m2c_den = tab.cmult_scalar(2).csubt(new Complex(4));
+  const m2c = m2c_num.cdiv(m2c_den);
+  const m2d = tb.cadd(Q.cmult(new Complex(0,1))).cmult_scalar(0.5);
 
-  const m2 = new MobiusTransformation(m2a, m2b, m2b, m2d);
+  const m2 = new MobiusTransformation(m2a, m2b, m2c, m2d);
 
   m.normalize();
   m2.normalize();
@@ -461,11 +495,17 @@ oncePuncturedTorusLimitSetPlotter = function (ta, tb, sign, terminationThreshold
   const a0 = ta.cdiv(tab.cmult(tb));
   const a1 = tab.cdiv(tb.cmult(ta));
   const a2 = tb.cdiv(ta.cmult(tab));
-  console.log("Complex probabilities = " + a0 + ", " + a1 + ", " + a2);
-  console.log("z1, z2 = " + a0 + ", " + (a0.cadd(a1)));
-  console.log("abAB = " + m.rightMultiply(m2).rightMultiply(m.invert_normalized()).rightMultiply(m2.invert_normalized()));
+  const abAB =  m.rightMultiply(m2).rightMultiply(m.invert_normalized()).rightMultiply(m2.invert_normalized());
+  console.log("abAB = " + abAB);
+  console.log("tr abAB = " + (abAB.a.cadd(abAB.d)));
 
-  const qfpr = new QuasiFuchsianPlotRoutine(m, m2, terminationThreshold, maxDepth, specialWords);
+  if (tabAB.csubt(new Complex(-2)).cnorm() < tolerance) {
+    specialWords.push("abAB");
+    console.log("Complex probabilities = " + a0 + ", " + a1 + ", " + a2);
+    console.log("z1, z2 = " + a0 + ", " + (a0.cadd(a1)));
+  }
+
+  const qfpr = new QuasiFuchsianPlotRoutine(m, m2, terminationThreshold, maxDepth, specialWords, fsa);
   if (!qfpr.terminateRun) { // parabolic fixed point at infinity
     return qfpr;
   }
@@ -585,13 +625,24 @@ function setPredefinedDrawing() {
       "taRe": 1.90378, "taIm": -0.03958, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": `b,${"a".repeat(10)}B${"a".repeat(9)}B`,
       "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
       "terminationThreshold": 0.005, "maxDepth": 2500
+    },
+    "fig_11_1": {
+      "taRe": 1.924781, "taIm": -0.047529, "tbRe": 2, "tbIm": 0, "tabAB": 0, "sign": "-", "specialWords": `b,${"a".repeat(10)}B`,
+      "xMin": -0.6, "xMax": 0.6, "yMin": -0.7, "yMax": 0.5,
+      "terminationThreshold": 0.001, "maxDepth": 1300,
+      "fsa": [[1,2,3,4],[1,5,-1,4],[7,2,8,-1],[-1,2,3,6],[9,-1,10,4],[7,2,11,-1],[12,-1,10,4],[1,5,-1,13],
+             [-1,2,3,14],[1,15,-1,4],[-1,16,3,4],[-1,2,3,17],[1,18,-1,4],[9,-1,-1,4],[-1,-1,10,4],[7,2,-1,-1],
+             [-1,2,8,-1],[-1,-1,10,4],[7,2,-1,-1]]
     }
   }
 
   const selection = document.getElementById('drawing').value;
   const drawing = predefinedDrawings[selection];
-  for (key in drawing) {
-    if (drawing.hasOwnProperty(key) && key != "sign") {
+  if (!drawing.hasOwnProperty("tabAB")) {
+    drawing["tabAB"] = -2;
+  }
+  for (const key in drawing) {
+    if (drawing.hasOwnProperty(key) && key != "sign" && key != "fsa") {
       const elt = document.getElementById(key);
       elt.value = drawing[key];
       elt.style.color = "black"; // in case it was previously red due to invalid input
@@ -602,6 +653,8 @@ function setPredefinedDrawing() {
   } else if (drawing["sign"] == "+") {
     document.getElementById("plusSign").checked = true;
   }
+
+  fsa = drawing["fsa"];
 }
 
 function plotLimitSet() {
@@ -609,6 +662,7 @@ function plotLimitSet() {
   const taIm = validateNumeric("taIm", 0);
   const tbRe = validateNumeric("tbRe", 0);
   const tbIm = validateNumeric("tbIm", 0);
+  const tabAB = validateNumeric("tabAB", -2);
   const xMin = validateNumeric("xMin");
   const xMax = validateNumeric("xMax");
   const yMin = validateNumeric("yMin");
@@ -637,10 +691,12 @@ function plotLimitSet() {
   plotter = oncePuncturedTorusLimitSetPlotter(
     new Complex(taRe, taIm),
     new Complex(tbRe, tbIm),
+    new Complex(tabAB),
     sign,
     terminationThreshold,
     maxDepth,
-    specialWords);
+    specialWords,
+    fsa);
 
   redraw();
 }
