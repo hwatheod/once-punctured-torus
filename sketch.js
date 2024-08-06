@@ -1,4 +1,7 @@
 const tolerance = 0.0001;
+const comm2_fsa = [[1,2,3,4],[1,5,-1,4],[7,2,8,-1],[-1,2,3,6],[9,-1,10,4],[7,2,11,-1],[12,-1,10,4],[1,5,-1,13],
+             [-1,2,3,14],[1,15,-1,4],[-1,16,3,4],[-1,2,3,17],[1,18,-1,4],[9,-1,-1,4],[-1,-1,10,4],[7,2,-1,-1],
+             [-1,2,8,-1],[-1,-1,10,4],[7,2,-1,-1]];
 let fsa = null;
 
 class Complex {
@@ -123,11 +126,16 @@ class MobiusTransformation {
     return new MobiusTransformation(this.a.cmult(m.a).cadd(this.b.cmult(m.c)), this.a.cmult(m.b).cadd(this.b.cmult(m.d)), this.c.cmult(m.a).cadd(this.d.cmult(m.c)), this.c.cmult(m.b).cadd(this.d.cmult(m.d)));
   }
 
-  parabolicFixpoint() {
-    // we don't verify parabolicity here because in some cases, we need to specify nearly parabolic words as special words.
-    // See Indra's Pearls, p. 265.
-
-    return this.a.csubt(this.d).cdiv(this.c.cmult_scalar(2));  /* (a-d)/(2c), returns NaN for point at infinity */
+  attractingFixpoint() {
+    /* returns NaN for point at infinity */
+    const a_minus_d = this.a.csubt(this.d);
+    const disc = a_minus_d.cmult(a_minus_d).cadd(this.b.cmult(this.c).cmult_scalar(4)).csqrt();
+    const z1 = a_minus_d.cadd(disc).cdiv(this.c.cmult_scalar(2));
+    if (this.c.cmult(z1).cadd(this.d).cnorm() >= 1) {
+      return z1;
+    } else {
+      return a_minus_d.csubt(disc).cdiv(this.c.cmult_scalar(2));
+    }
   }
 
   toString() {
@@ -228,6 +236,11 @@ class QuasiFuchsianPlotRoutine {
     let prevPoint = this.oldPoint;
     const pointList = [];
     for (const fixedPoint of this.specialFixedPointList[i]) {
+      // in the quasi-Fuchsian case, skip first element since it should be the same as the last point plotted (Indra's Pearls, p. 185)
+      if (fsa == null && first) {
+        first = false;
+        continue;
+      }
       const newPoint = curTransform.apply(fixedPoint);
       if (first) {
         prevPoint = newPoint;
@@ -247,10 +260,17 @@ class QuasiFuchsianPlotRoutine {
     if (terminateBranch) {
       const endPoint = prevPoint; // last point found in previous loop
       prevPoint = this.oldPoint;
+      first = true;
       const curThis = this; // can't use "this" inside the forEach closure directly
       pointList.forEach(function(newPoint) {
-        curThis.count += plane.plotLine(prevPoint, newPoint);
+        if (fsa != null && first) {
+          plane.plot(newPoint);
+          curThis.count += 1;
+        } else {
+          curThis.count += plane.plotLine(prevPoint, newPoint);
+        }
         prevPoint = newPoint;
+        first = false;
       });
       this.oldPoint = endPoint;
 
@@ -316,7 +336,7 @@ class QuasiFuchsianPlotRoutine {
             const index = letterList.indexOf(c);
             transformationForWord = transformationForWord.rightMultiply(this.transformList[index]);
          }
-         const fixedPoint = transformationForWord.parabolicFixpoint();
+         const fixedPoint = transformationForWord.attractingFixpoint();
          if (isNaN(fixedPoint.re)) {
            alert("Fixed point infinity for word: " + word + ". Changing the sign may help.");
            return false;
@@ -629,10 +649,14 @@ function setPredefinedDrawing() {
     "fig_11_1": {
       "taRe": 1.924781, "taIm": -0.047529, "tbRe": 2, "tbIm": 0, "tabAB": 0, "sign": "-", "specialWords": `b,${"a".repeat(10)}B`,
       "xMin": -0.6, "xMax": 0.6, "yMin": -0.7, "yMax": 0.5,
-      "terminationThreshold": 0.001, "maxDepth": 1300,
-      "fsa": [[1,2,3,4],[1,5,-1,4],[7,2,8,-1],[-1,2,3,6],[9,-1,10,4],[7,2,11,-1],[12,-1,10,4],[1,5,-1,13],
-             [-1,2,3,14],[1,15,-1,4],[-1,16,3,4],[-1,2,3,17],[1,18,-1,4],[9,-1,-1,4],[-1,-1,10,4],[7,2,-1,-1],
-             [-1,2,8,-1],[-1,-1,10,4],[7,2,-1,-1]]
+      "terminationThreshold": 0.001, "maxDepth": 600,
+      "fsa": comm2_fsa
+    },
+    "fig_11_3": {
+      "taRe": 2, "taIm": 0, "tbRe": 2, "tbIm": 0, "tabAB": 0, "sign": "-", "specialWords": "a,b,ab", // ab is not parabolic - a hack to get >= 2 special words ending in each letter
+      "xMin": -0.6, "xMax": 0.6, "yMin": -0.7, "yMax": 0.5,
+      "terminationThreshold": 0.0005, "maxDepth": 1200,
+      "fsa": comm2_fsa
     }
   }
 
