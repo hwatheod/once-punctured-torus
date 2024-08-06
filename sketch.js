@@ -1,11 +1,13 @@
 const tolerance = 0.0001;
-const comm2_fsa = [[1,2,3,4],[1,5,-1,4],[7,2,8,-1],[-1,2,3,6],[9,-1,10,4],[7,2,11,-1],[12,-1,10,4],[1,5,-1,13],
+const fsa = {
+  "none": null,
+  "comm2": [[1,2,3,4],[1,5,-1,4],[7,2,8,-1],[-1,2,3,6],[9,-1,10,4],[7,2,11,-1],[12,-1,10,4],[1,5,-1,13],
              [-1,2,3,14],[1,15,-1,4],[-1,16,3,4],[-1,2,3,17],[1,18,-1,4],[9,-1,-1,4],[-1,-1,10,4],[7,2,-1,-1],
-             [-1,2,8,-1],[-1,-1,10,4],[7,2,-1,-1]];
-const two10_fsa = [[1, 2, 3, 4], [5, 2, -1, 4], [1, 6, 3, -1], [-1, 2, 7, 4], [1, -1, 3, 8], [9, 2, -1, 4],
-  [1, 10, 3, -1], [-1, 2, 11, 4], [1, -1, 3, 12], [13, 2, -1, 4], [1, 14, 3, -1], [-1, 2, 15, 4], [1, -1, 3, 16],
-  [15, 2, -1, 4], [1, 16, 3, -1], [-1, 2, -1, 4], [1, -1, 3, -1]];
-let fsa = null;
+             [-1,2,8,-1],[-1,-1,10,4],[7,2,-1,-1]],
+  "two10": [[1, 2, 3, 4], [5, 2, -1, 4], [1, 6, 3, -1], [-1, 2, 7, 4], [1, -1, 3, 8], [9, 2, -1, 4],
+          [1, 10, 3, -1], [-1, 2, 11, 4], [1, -1, 3, 12], [13, 2, -1, 4], [1, 14, 3, -1], [-1, 2, 15, 4], [1, -1, 3, 16],
+          [15, 2, -1, 4], [1, 16, 3, -1], [-1, 2, -1, 4], [1, -1, 3, -1]]
+};
 
 class Complex {
   constructor(re1, im1=0) {
@@ -233,14 +235,14 @@ class QuasiFuchsianPlotRoutine {
     return result;
   }
 
-  plotFunction(plane, i, depth, curTransform) {
+  plotFunction(plane, i, depth, curTransform, isQuasiFuchsian) {
     let terminateBranch = true;
     let first = true;
     let prevPoint = this.oldPoint;
     const pointList = [];
     for (const fixedPoint of this.specialFixedPointList[i]) {
       // in the quasi-Fuchsian case, skip first element since it should be the same as the last point plotted (Indra's Pearls, p. 185)
-      if (fsa == null && first) {
+      if (isQuasiFuchsian && first) {
         first = false;
         continue;
       }
@@ -266,7 +268,7 @@ class QuasiFuchsianPlotRoutine {
       first = true;
       const curThis = this; // can't use "this" inside the forEach closure directly
       pointList.forEach(function(newPoint) {
-        if (fsa != null && first) {
+        if (!isQuasiFuchsian && first) {
           plane.plot(newPoint);
           curThis.count += 1;
         } else {
@@ -433,7 +435,7 @@ dfsPlot = function(plane, plotRoutine, colorList) {
     curTransform = curTransform.rightMultiply(plotRoutine.transformList[i]);
     curTransformList[depth] = curTransform;
 
-    terminateBranch = plotRoutine.plotFunction(plane, i, depth, curTransform);
+    terminateBranch = plotRoutine.plotFunction(plane, i, depth, curTransform, plotRoutine.fsa == null);
 
     if (depth == plotRoutine.maxDepth - 1) {
       terminateBranch = true;
@@ -620,7 +622,7 @@ function setPredefinedDrawing() {
       "terminationThreshold": 0.001, "maxDepth": 2500
     },
     "fig_8_15_1": {
-      "taRe": 2.0, "taIm": 0.05, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "a,b",
+      "taRe": 2.0, "taIm": 0.05, "tbRe": 2, "tbIm": 0, "sign": "-", "specialWords": "a,b", // a is "nearly parabolic" (Indra's Pearls, p. 265)
       "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
       "terminationThreshold": 0.001, "maxDepth": 2500
     },
@@ -653,18 +655,19 @@ function setPredefinedDrawing() {
       "taRe": 1.924781, "taIm": -0.047529, "tbRe": 2, "tbIm": 0, "tabAB": 0, "sign": "-", "specialWords": `b,${"a".repeat(10)}B`,
       "xMin": -0.6, "xMax": 0.6, "yMin": -0.7, "yMax": 0.5,
       "terminationThreshold": 0.001, "maxDepth": 600,
-      "fsa": comm2_fsa
+      "fsa": "comm2"
     },
     "fig_11_3": {
       "taRe": 2, "taIm": 0, "tbRe": 2, "tbIm": 0, "tabAB": 0, "sign": "-", "specialWords": "a,b,ab", // ab is not parabolic - a hack to get >= 2 special words ending in each letter
       "xMin": -0.6, "xMax": 0.6, "yMin": -0.7, "yMax": 0.5,
       "terminationThreshold": 0.0005, "maxDepth": 1200,
-      "fsa": comm2_fsa
+      "fsa": "comm2"
     },
     "fig_11_4": {
       "taRe": 1.90211303259032, "taIm": 0, "tbRe": 1.90211303259032, "tbIm": 0, "sign": "-", "specialWords": "",
       "xMin": -1.1, "xMax": 1.1, "yMin": -1.1, "yMax": 1.1,
-      "terminationThreshold": 0.001, "maxDepth": 2500, "fsa": two10_fsa
+      "terminationThreshold": 0.001, "maxDepth": 2500,
+      "fsa": "two10"
     }
   }
 
@@ -673,8 +676,11 @@ function setPredefinedDrawing() {
   if (!drawing.hasOwnProperty("tabAB")) {
     drawing["tabAB"] = -2;
   }
+  if (!drawing.hasOwnProperty("fsa")) {
+    drawing["fsa"] = "none";
+  }
   for (const key in drawing) {
-    if (drawing.hasOwnProperty(key) && key != "sign" && key != "fsa") {
+    if (drawing.hasOwnProperty(key) && key != "sign") {
       const elt = document.getElementById(key);
       elt.value = drawing[key];
       elt.style.color = "black"; // in case it was previously red due to invalid input
@@ -685,8 +691,6 @@ function setPredefinedDrawing() {
   } else if (drawing["sign"] == "+") {
     document.getElementById("plusSign").checked = true;
   }
-
-  fsa = drawing["fsa"];
 }
 
 function plotLimitSet() {
@@ -699,6 +703,7 @@ function plotLimitSet() {
   const xMax = validateNumeric("xMax");
   const yMin = validateNumeric("yMin");
   const yMax = validateNumeric("yMax");
+  const fsaKey = document.getElementById("fsa").value;
 
   let sign = 1;
   if (document.getElementById('minusSign').checked) {
@@ -728,7 +733,7 @@ function plotLimitSet() {
     terminationThreshold,
     maxDepth,
     specialWords,
-    fsa);
+    fsa[fsaKey]);
 
   redraw();
 }

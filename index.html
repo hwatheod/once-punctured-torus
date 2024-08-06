@@ -65,6 +65,12 @@
 
         <label for="terminationThreshold">Epsilon:</label><input type="text" size="6" id="terminationThreshold">
         <label for="maxDepth">Max depth:</label><input type="number" size="6" id="maxDepth" min="1">
+        <label for="fsa">FSA:</label>
+        <select name="fsa" id="fsa">
+          <option value="none">None</option>
+          <option value="comm2">(abAB)^2=1</option>
+          <option value="two10">a^10=b^10=1</option>
+        </select>
         <br>
         To understand the mathematics behind this, see the book <a href="http://klein.math.okstate.edu/IndrasPearls/">Indra's Pearls</a> (figure references in the predefined drawings come from that book).
       </form>
